@@ -12,6 +12,7 @@ const uploadDocument = async (req, res) => {
             tipoDestino, 
             menuSeccion, 
             nombreMenuOpci,
+            seccionLateral,
             rev // <-- 1. Capturar el campo de revisión / versión
         } = req.body;
         const archivo = req.file;
@@ -50,11 +51,32 @@ const uploadDocument = async (req, res) => {
             rutaFinalArchivo = `uploads/${normalizedFileName}`;
         }
 
+        // Sección del menú lateral (solo aplica a destino 'categoria')
+        const SECCIONES_VALIDAS = ['caracterizacion', 'formularios', 'listas-maestras', 'documentos', 'externos'];
+        const seccionFinal = tipoDestino === 'categoria' && SECCIONES_VALIDAS.includes(seccionLateral)
+            ? seccionLateral
+            : null;
+
+        // La categoría (CP, PR, IT, FO, ...) se deduce del prefijo del código, si existe en la tabla
+        let categoriaFinal = null;
+        if (tipoDestino === 'categoria') {
+            if (idCategoria && !isNaN(idCategoria)) {
+                categoriaFinal = parseInt(idCategoria);
+            } else if (codigoDocumento) {
+                const prefijo = codigoDocumento.toUpperCase().trim().substring(0, 2);
+                const catResult = await pool.request()
+                    .input('Codigo', sql.VarChar, prefijo)
+                    .query('SELECT IdCategoria FROM CategoriasDocumento WHERE Codigo = @Codigo');
+                categoriaFinal = catResult.recordset[0]?.IdCategoria ?? null;
+            }
+        }
+
         await DocumentModel.create({
             titulo,
             codigoDocumento: codigoDocumento || null,
             idDepartamento: departamentoFinal,
-            idCategoria: tipoDestino === 'categoria' ? idCategoria : null, 
+            idCategoria: categoriaFinal,
+            seccionLateral: seccionFinal,
             rutaArchivo: rutaFinalArchivo,
             nombreOriginal: archivo.originalname,
             idUsuario: idUsuario ? parseInt(idUsuario) : 1,

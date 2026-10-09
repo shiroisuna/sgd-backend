@@ -1,7 +1,7 @@
 const { getConnection, sql } = require('../../config/db');
 
 class DocumentModel {
-    static async create({ titulo, codigoDocumento, idDepartamento, idCategoria, rutaArchivo, nombreOriginal, idUsuario, menuSeccion, nombreMenuOpci, version }) {
+    static async create({ titulo, codigoDocumento, idDepartamento, idCategoria, rutaArchivo, nombreOriginal, idUsuario, menuSeccion, nombreMenuOpci, version, seccionLateral }) {
         const pool = await getConnection();
 
         let idCategoriaReal = idCategoria;
@@ -26,8 +26,8 @@ class DocumentModel {
         }
 
         const query = `
-            INSERT INTO Documentos (Titulo, CodigoDocumento, IdDepartamento, IdCategoria, RutaArchivo, NombreArchivoOriginal, SubidoPor, MenuSeccion, NombreMenuOpci, Version)
-            VALUES (@Titulo, @CodigoDocumento, @IdDepartamento, @IdCategoria, @RutaArchivo, @NombreOriginal, @SubidoPor, @MenuSeccion, @NombreMenuOpci, @Version)
+            INSERT INTO Documentos (Titulo, CodigoDocumento, IdDepartamento, IdCategoria, RutaArchivo, NombreArchivoOriginal, SubidoPor, MenuSeccion, NombreMenuOpci, Version, SeccionLateral)
+            VALUES (@Titulo, @CodigoDocumento, @IdDepartamento, @IdCategoria, @RutaArchivo, @NombreOriginal, @SubidoPor, @MenuSeccion, @NombreMenuOpci, @Version, @SeccionLateral)
         `;
 
         await pool.request()
@@ -41,6 +41,7 @@ class DocumentModel {
             .input('MenuSeccion', sql.VarChar, menuSeccion || null)
             .input('NombreMenuOpci', sql.VarChar, nombreMenuOpci || null)
             .input('Version', sql.VarChar, version || '0')
+            .input('SeccionLateral', sql.VarChar, seccionLateral || null)
             .query(query);
     }
 

@@ -41,7 +41,18 @@ const storage = multer.diskStorage({
             const deptClean = String(deptFolder).replace(/[^a-zA-Z0-9_-]/g, '_');
             let uploadDir = path.join('uploads', deptClean);
 
-            // 3. Regla de negocio para carpetas basada en el código del documento
+            // 3a. Si viene la sección del menú lateral, la carpeta es esa sección
+            const SECCIONES_LATERALES = ['caracterizacion', 'formularios', 'listas-maestras', 'documentos', 'externos'];
+            const seccionLateral = req.body.seccionLateral;
+            if (SECCIONES_LATERALES.includes(seccionLateral)) {
+                uploadDir = path.join(uploadDir, seccionLateral);
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
+                }
+                return cb(null, uploadDir);
+            }
+
+            // 3b. Regla de negocio para carpetas basada en el código del documento
             // Si el código comienza con PR, IT, PL, PG, TB (u otros generales), van a la carpeta 'documentos'
             const esDocumentoGeneral = /^(PR|IT|PL|PG|TB)/.test(codigoDocumento);
 
