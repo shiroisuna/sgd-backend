@@ -44,6 +44,22 @@ class DocumentModel {
             .query(query);
     }
 
+    static async getById(idDocumento) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('IdDocumento', sql.Int, parseInt(idDocumento))
+            .query('SELECT * FROM Documentos WHERE IdDocumento = @IdDocumento');
+        return result.recordset[0] || null;
+    }
+
+    static async deleteById(idDocumento) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('IdDocumento', sql.Int, parseInt(idDocumento))
+            .query('DELETE FROM Documentos WHERE IdDocumento = @IdDocumento');
+        return result.rowsAffected[0];
+    }
+
     static async getByDepartment(idDepartamento) {
         const pool = await getConnection();
         const result = await pool.request()

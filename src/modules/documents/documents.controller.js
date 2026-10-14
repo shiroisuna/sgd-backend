@@ -1,5 +1,11 @@
 const DocumentModel = require('./documents.model');
 const { getConnection, sql } = require('../../config/db');
+const path = require('path');
+const fs = require('fs');
+
+// Carpeta raíz del backend (donde está la carpeta uploads)
+const BACKEND_ROOT = path.join(__dirname, '../../..');
+const UPLOADS_ROOT = path.join(BACKEND_ROOT, 'uploads');
 
 const uploadDocument = async (req, res) => {
     try {
@@ -190,7 +196,49 @@ const getMenuStructure = async (req, res) => {
     }
 };
 
+const deleteDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ error: 'ID de documento inválido.' });
+        }
+
+        const doc = await DocumentModel.getById(id);
+        if (!doc) {
+            return res.status(404).json({ error: 'El documento no existe.' });
+        }
+
+        // 1. Borrar el registro de la base de datos
+        await DocumentModel.deleteById(id);
+
+        // 2. Borrar el PDF del disco (solo si está dentro de la carpeta uploads)
+        if (doc.RutaArchivo) {
+            const rutaNormalizada = doc.RutaArchivo.replace(/\\/g, '/');
+            const rutaFisica = path.resolve(BACKEND_ROOT, rutaNormalizada);
+
+            if (rutaFisica.startsWith(UPLOADS_ROOT + path.sep) && fs.existsSync(rutaFisica)) {
+                try {
+                    fs.unlinkSync(rutaFisica);
+                } catch (fileErr) {
+                    // El registro ya se borró; solo se deja constancia si el archivo no se pudo eliminar
+                    console.error('No se pudo eliminar el archivo físico:', rutaFisica, fileErr.message);
+                }
+            }
+        }
+
+        res.json({ mensaje: 'Documento eliminado correctamente.' });
+    } catch (err) {
+        console.error('Error al eliminar documento:', err);
+        // 547 = el documento está referenciado en otra tabla (llave foránea)
+        if (err.number === 547) {
+            return res.status(409).json({ error: 'No se puede eliminar: el documento está referenciado en otra tabla.' });
+        }
+        res.status(500).json({ error: 'Error al eliminar el documento.' });
+    }
+};
+
 module.exports = {
+    deleteDocument,
     uploadDocument,
     getDocumentsByDepartment,
     getCategories,

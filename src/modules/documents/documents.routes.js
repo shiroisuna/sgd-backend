@@ -7,6 +7,7 @@ const { uploadDocument,
     getDocumentByTitleOrCategory, 
     getDocumentsByDeptAndCategory,
     getMenuStructure,
+    deleteDocument,
     
     getDocumentsQuery // <-- Nuevo controlador unificado
  } = require('./documents.controller');
@@ -31,6 +32,10 @@ router.get('/view/:searchTerm', getDocumentByTitleOrCategory);
 
 // Ruta para obtener la estructura del menú superior agrupada por categorías
 router.get('/menu-structure', getMenuStructure);
+
+// Eliminar un documento (registro en BD + archivo PDF)
+// Va al final para que no choque con rutas como /categories o /menu-structure
+router.delete('/:id', deleteDocument);
 
 // // (Otras rutas existentes de documentos...)
 // router.get('/view/:titulo', getDocumentByTitle);
