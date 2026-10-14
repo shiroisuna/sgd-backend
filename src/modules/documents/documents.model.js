@@ -60,6 +60,19 @@ class DocumentModel {
         return result.rowsAffected[0];
     }
 
+    // Todos los documentos de todos los departamentos (opción "Todos" del admin)
+    static async getAll() {
+        const pool = await getConnection();
+        const result = await pool.request().query(`
+            SELECT D.*, C.Codigo AS CodigoCategoria, Dep.Codigo AS CodigoDepartamento
+            FROM Documentos D
+            LEFT JOIN CategoriasDocumento C ON D.IdCategoria = C.IdCategoria
+            LEFT JOIN Departamentos Dep ON D.IdDepartamento = Dep.IdDepartamento
+            ORDER BY D.IdDocumento DESC
+        `);
+        return result.recordset;
+    }
+
     static async getByDepartment(idDepartamento) {
         const pool = await getConnection();
         const result = await pool.request()

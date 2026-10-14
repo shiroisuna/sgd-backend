@@ -21,6 +21,9 @@ class AuthController {
         return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
       }
 
+      // Todos los departamentos que maneja (principal + adicionales)
+      const departamentos = await AuthModel.getUserDepartments(user.IdUsuario, user.IdDepartamento);
+
       res.json({
         message: '¡Bienvenido al sistema!',
         usuario: {
@@ -30,6 +33,7 @@ class AuthController {
           departamentoId: user.IdDepartamento,
           departamentoNombre: user.departamentoNombre, // <--- ¡Agregado aquí!
           codigoDepartamento: user.codigoDepartamento,   // <--- (Opcional si también lo quieres)
+          departamentos,
           esAdmin: user.esAdmin,
           debeCambiarPassword: user.DebeCambiarPassword
         }

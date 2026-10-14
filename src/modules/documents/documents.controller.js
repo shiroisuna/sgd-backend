@@ -47,9 +47,24 @@ const uploadDocument = async (req, res) => {
             });
         }
 
-        const departamentoFinal = (username === 'admin' && idDepartamento) 
-            ? parseInt(idDepartamento) 
-            : userData?.IdDepartamento;
+        // Departamento destino:
+        // - admin: el que eligió
+        // - usuario normal: el que eligió, si es su principal o uno de sus adicionales; si no, su principal
+        let departamentoFinal = userData?.IdDepartamento;
+        if (idDepartamento && !isNaN(idDepartamento)) {
+            const deptoSolicitado = parseInt(idDepartamento);
+            if (username === 'admin' || deptoSolicitado === userData?.IdDepartamento) {
+                departamentoFinal = deptoSolicitado;
+            } else {
+                const permiso = await pool.request()
+                    .input('IdUsuario', sql.Int, parseInt(idUsuario || 1))
+                    .input('IdDepartamento', sql.Int, deptoSolicitado)
+                    .query('SELECT 1 AS ok FROM UsuarioDepartamentos WHERE IdUsuario = @IdUsuario AND IdDepartamento = @IdDepartamento');
+                if (permiso.recordset.length > 0) {
+                    departamentoFinal = deptoSolicitado;
+                }
+            }
+        }
 
         let rutaFinalArchivo = archivo.path;
         if (tipoDestino === 'menuSuperior') {
@@ -109,6 +124,12 @@ const getDocumentsQuery = async (req, res) => {
         
         if (!dept) {
             return res.status(400).json({ error: 'El parámetro "dept" es obligatorio.' });
+        }
+
+        // Opción "Todos" del selector del admin
+        if (dept === 'TODOS') {
+            const todos = await DocumentModel.getAll();
+            return res.json(todos || []);
         }
 
         const deptId = dept === 'SGC' ? 1 : parseInt(dept);

@@ -33,6 +33,22 @@ class AuthModel {
         
     }
 
+    // Departamentos que maneja el usuario: el principal + los adicionales
+    static async getUserDepartments(idUsuario, idPrincipal) {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('IdUsuario', sql.Int, idUsuario)
+            .input('IdPrincipal', sql.Int, idPrincipal)
+            .query(`
+                SELECT d.IdDepartamento AS id, d.Codigo AS codigo, d.Nombre AS nombre
+                FROM Departamentos d
+                WHERE d.IdDepartamento = @IdPrincipal
+                   OR d.IdDepartamento IN (SELECT IdDepartamento FROM UsuarioDepartamentos WHERE IdUsuario = @IdUsuario)
+                ORDER BY CASE WHEN d.IdDepartamento = @IdPrincipal THEN 0 ELSE 1 END, d.Nombre
+            `);
+        return result.recordset;
+    }
+
     // Nuevo método para cambiar contraseña y desmarcar el primer ingreso
     static async updatePasswordAndClearFlag(idUsuario, hashedPassword) {
         const pool = await getConnection();

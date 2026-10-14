@@ -17,7 +17,7 @@ class UsersController {
   // Registrar un nuevo usuario y enviar correo con credenciales
   static async createUser(req, res) {
     try {
-      const { username, email, password, departamentoId } = req.body;
+      const { username, email, password, departamentoId, departamentosAdicionales } = req.body;
 
       if (!username || !email || !password || !departamentoId) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
@@ -29,6 +29,11 @@ class UsersController {
 
       // Guardar el usuario usando el modelo
       const userId = await UsersModel.create(username, email, hashedPassword, departamentoId);
+
+      // Departamentos adicionales (ej. AL + PT)
+      if (Array.isArray(departamentosAdicionales)) {
+        await UsersModel.setAdditionalDepartments(userId, departamentosAdicionales, departamentoId);
+      }
 
       // Intentar enviar el correo electrónico con las credenciales en texto plano
       try {
@@ -68,16 +73,20 @@ class UsersController {
   static async updateUser(req, res) {
     try {
       const { id } = req.params;
-      const { username, email, password, activo } = req.body;
+      const { username, email, password, activo, departamentoId, departamentosAdicionales } = req.body;
       
       let hashedPassword = null;
       if (password && password.trim() !== '') {
         hashedPassword = await bcrypt.hash(password, 10);
       }
 
-      const affectedRows = await UsersModel.update(id, username, email, hashedPassword, activo);
+      const affectedRows = await UsersModel.update(id, username, email, hashedPassword, activo, departamentoId);
       if (affectedRows === 0) {
         return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      if (Array.isArray(departamentosAdicionales)) {
+        await UsersModel.setAdditionalDepartments(id, departamentosAdicionales, departamentoId);
       }
 
       res.json({ message: 'Usuario actualizado exitosamente' });
