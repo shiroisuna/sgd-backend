@@ -51,21 +51,23 @@ const uploadDocument = async (req, res) => {
             rutaFinalArchivo = `uploads/${normalizedFileName}`;
         }
 
-        // Sección del menú lateral (solo aplica a destino 'categoria')
-        const SECCIONES_VALIDAS = ['caracterizacion', 'formularios', 'listas-maestras', 'documentos', 'externos'];
-        const seccionFinal = tipoDestino === 'categoria' && SECCIONES_VALIDAS.includes(seccionLateral)
-            ? seccionLateral
-            : null;
-
-        // La categoría (CP, PR, IT, FO, ...) se deduce del prefijo del código, si existe en la tabla
+        // Categoría del documento:
+        // - Listas Maestras y Documentos Externos usan su propia categoría (LM / EX)
+        // - El resto se deduce del prefijo del código (CP, FO, PR, IT, ...)
         let categoriaFinal = null;
         if (tipoDestino === 'categoria') {
-            if (idCategoria && !isNaN(idCategoria)) {
-                categoriaFinal = parseInt(idCategoria);
+            let codigoCategoria = null;
+            if (seccionLateral === 'listas-maestras') {
+                codigoCategoria = 'LM';
+            } else if (seccionLateral === 'externos') {
+                codigoCategoria = 'EX';
             } else if (codigoDocumento) {
-                const prefijo = codigoDocumento.toUpperCase().trim().substring(0, 2);
+                codigoCategoria = codigoDocumento.toUpperCase().trim().substring(0, 2);
+            }
+
+            if (codigoCategoria) {
                 const catResult = await pool.request()
-                    .input('Codigo', sql.VarChar, prefijo)
+                    .input('Codigo', sql.VarChar, codigoCategoria)
                     .query('SELECT IdCategoria FROM CategoriasDocumento WHERE Codigo = @Codigo');
                 categoriaFinal = catResult.recordset[0]?.IdCategoria ?? null;
             }
@@ -76,7 +78,6 @@ const uploadDocument = async (req, res) => {
             codigoDocumento: codigoDocumento || null,
             idDepartamento: departamentoFinal,
             idCategoria: categoriaFinal,
-            seccionLateral: seccionFinal,
             rutaArchivo: rutaFinalArchivo,
             nombreOriginal: archivo.originalname,
             idUsuario: idUsuario ? parseInt(idUsuario) : 1,

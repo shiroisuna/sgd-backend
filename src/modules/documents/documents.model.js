@@ -1,7 +1,7 @@
 const { getConnection, sql } = require('../../config/db');
 
 class DocumentModel {
-    static async create({ titulo, codigoDocumento, idDepartamento, idCategoria, rutaArchivo, nombreOriginal, idUsuario, menuSeccion, nombreMenuOpci, version, seccionLateral }) {
+    static async create({ titulo, codigoDocumento, idDepartamento, idCategoria, rutaArchivo, nombreOriginal, idUsuario, menuSeccion, nombreMenuOpci, version }) {
         const pool = await getConnection();
 
         let idCategoriaReal = idCategoria;
@@ -26,8 +26,8 @@ class DocumentModel {
         }
 
         const query = `
-            INSERT INTO Documentos (Titulo, CodigoDocumento, IdDepartamento, IdCategoria, RutaArchivo, NombreArchivoOriginal, SubidoPor, MenuSeccion, NombreMenuOpci, Version, SeccionLateral)
-            VALUES (@Titulo, @CodigoDocumento, @IdDepartamento, @IdCategoria, @RutaArchivo, @NombreOriginal, @SubidoPor, @MenuSeccion, @NombreMenuOpci, @Version, @SeccionLateral)
+            INSERT INTO Documentos (Titulo, CodigoDocumento, IdDepartamento, IdCategoria, RutaArchivo, NombreArchivoOriginal, SubidoPor, MenuSeccion, NombreMenuOpci, Version)
+            VALUES (@Titulo, @CodigoDocumento, @IdDepartamento, @IdCategoria, @RutaArchivo, @NombreOriginal, @SubidoPor, @MenuSeccion, @NombreMenuOpci, @Version)
         `;
 
         await pool.request()
@@ -41,7 +41,6 @@ class DocumentModel {
             .input('MenuSeccion', sql.VarChar, menuSeccion || null)
             .input('NombreMenuOpci', sql.VarChar, nombreMenuOpci || null)
             .input('Version', sql.VarChar, version || '0')
-            .input('SeccionLateral', sql.VarChar, seccionLateral || null)
             .query(query);
     }
 
@@ -49,7 +48,13 @@ class DocumentModel {
         const pool = await getConnection();
         const result = await pool.request()
             .input('IdDepartamento', sql.Int, parseInt(idDepartamento))
-            .query('SELECT * FROM Documentos WHERE IdDepartamento = @IdDepartamento ORDER BY IdDocumento DESC');
+            .query(`
+                SELECT D.*, C.Codigo AS CodigoCategoria
+                FROM Documentos D
+                LEFT JOIN CategoriasDocumento C ON D.IdCategoria = C.IdCategoria
+                WHERE D.IdDepartamento = @IdDepartamento
+                ORDER BY D.IdDocumento DESC
+            `);
         
         return result.recordset;
     }
