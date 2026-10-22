@@ -100,15 +100,33 @@ const storage = multer.diskStorage({
     }
 });
 
+// Formatos permitidos en Formularios del menú superior (además de PDF)
+const EXTENSIONES_OFFICE = ['.doc', '.docx', '.xls', '.xlsx', '.xlsm', '.ppt', '.pptx'];
+
+const esFormularioMenuSuperior = (req) =>
+    (req.body.tipoDestino === 'menuSuperior' || req.body.esMenuSuperior === 'true') &&
+    req.body.menuSeccion === 'formularios';
+
 const uploadPdf = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB (los Excel/PowerPoint pesan más)
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf') {
-            cb(null, true);
-        } else {
-            cb(new Error('Solo se permiten archivos en formato PDF.'), false);
+        const ext = path.extname(file.originalname).toLowerCase();
+
+        if (file.mimetype === 'application/pdf' || ext === '.pdf') {
+            return cb(null, true);
         }
+
+        // Word, Excel y PowerPoint solo en Formularios del menú superior
+        if (esFormularioMenuSuperior(req) && EXTENSIONES_OFFICE.includes(ext)) {
+            return cb(null, true);
+        }
+
+        cb(new Error(
+            esFormularioMenuSuperior(req)
+                ? 'Formato no permitido. Use PDF, Word, Excel o PowerPoint.'
+                : 'Solo se permiten archivos en formato PDF.'
+        ), false);
     }
 });
 

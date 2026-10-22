@@ -16,7 +16,18 @@ const { uploadDocument,
 router.get('/', getDocumentsQuery);
 
 // Endpoint para subir un PDF (Usa el middleware 'uploadPdf.single("archivoPdf")')
-router.post('/upload', uploadPdf.single('archivoPdf'), uploadDocument);
+// Si el archivo no es válido, responde el motivo en JSON (para mostrarlo en el formulario)
+router.post('/upload', (req, res, next) => {
+    uploadPdf.single('archivoPdf')(req, res, (err) => {
+        if (err) {
+            const mensaje = err.code === 'LIMIT_FILE_SIZE'
+                ? 'El archivo supera el tamaño máximo de 20 MB.'
+                : err.message;
+            return res.status(400).json({ error: mensaje });
+        }
+        next();
+    });
+}, uploadDocument);
 
 // Endpoint para listar documentos por ID de Departamento
 router.get('/department/:idDepartamento', getDocumentsByDepartment);
