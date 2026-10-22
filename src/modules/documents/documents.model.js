@@ -64,7 +64,7 @@ class DocumentModel {
     static async getAll() {
         const pool = await getConnection();
         const result = await pool.request().query(`
-            SELECT D.*, C.Codigo AS CodigoCategoria, Dep.Codigo AS CodigoDepartamento
+            SELECT D.*, C.Codigo AS CodigoCategoria, Dep.Codigo AS CodigoDepartamento, Dep.Nombre AS NombreDepartamento
             FROM Documentos D
             LEFT JOIN CategoriasDocumento C ON D.IdCategoria = C.IdCategoria
             LEFT JOIN Departamentos Dep ON D.IdDepartamento = Dep.IdDepartamento
@@ -78,9 +78,10 @@ class DocumentModel {
         const result = await pool.request()
             .input('IdDepartamento', sql.Int, parseInt(idDepartamento))
             .query(`
-                SELECT D.*, C.Codigo AS CodigoCategoria
+                SELECT D.*, C.Codigo AS CodigoCategoria, Dep.Codigo AS CodigoDepartamento, Dep.Nombre AS NombreDepartamento
                 FROM Documentos D
                 LEFT JOIN CategoriasDocumento C ON D.IdCategoria = C.IdCategoria
+                LEFT JOIN Departamentos Dep ON D.IdDepartamento = Dep.IdDepartamento
                 WHERE D.IdDepartamento = @IdDepartamento
                 ORDER BY D.IdDocumento DESC
             `);
@@ -179,9 +180,10 @@ class DocumentModel {
             .input('SearchLike', sql.VarChar, `%${term}%`)
             .query(`
                 SELECT TOP 1 * FROM Documentos 
-                WHERE RutaArchivo LIKE @SearchLike 
+                WHERE NombreMenuOpci = @SearchExact
                    OR Titulo = @SearchExact 
                    OR CodigoDocumento = @SearchExact 
+                   OR RutaArchivo LIKE @SearchLike 
                    OR NombreArchivoOriginal LIKE @SearchLike
                 ORDER BY IdDocumento DESC
             `);
