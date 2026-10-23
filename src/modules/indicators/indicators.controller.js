@@ -104,7 +104,7 @@ const getIndicatorsByDepartment = async (req, res) => {
 
 const createIndicatorConfig = async (req, res) => {
     try {
-        const { nombre, idDepartamento, formulaDescripcion, anio } = req.body;
+        const { nombre, idDepartamento, formulaDescripcion, anio, meta } = req.body;
 
         if (!nombre || !idDepartamento || !anio) {
             return res.status(400).json({ error: 'El nombre, el ID del departamento y el año son obligatorios.' });
@@ -114,7 +114,8 @@ const createIndicatorConfig = async (req, res) => {
             nombre,
             idDepartamento,
             formulaDescripcion,
-            anio
+            anio,
+            meta
         });
 
         res.status(201).json({ 
@@ -167,7 +168,59 @@ const getIndicatorRecords = async (req, res) => {
     }
 };
 
+const updateIndicatorMeta = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { meta } = req.body;
+        if (meta !== null && meta !== '' && (isNaN(meta) || Number(meta) < 0 || Number(meta) > 999)) {
+            return res.status(400).json({ error: 'La meta debe ser un porcentaje válido.' });
+        }
+        const filas = await IndicatorModel.updateMeta(id, meta);
+        if (filas === 0) return res.status(404).json({ error: 'Indicador no encontrado.' });
+        res.json({ mensaje: 'Meta actualizada.' });
+    } catch (err) {
+        console.error('Error al actualizar la meta:', err);
+        res.status(500).json({ error: 'Error interno al actualizar la meta.' });
+    }
+};
+
+// GET /api/indicators/dashboard?desde=2024&hasta=2026&idDepartamento=13 (idDepartamento opcional)
+const getDashboardData = async (req, res) => {
+    try {
+        const hasta = parseInt(req.query.hasta) || new Date().getFullYear();
+        const desde = parseInt(req.query.desde) || hasta - 2;
+        const { idDepartamento } = req.query;
+        const datos = await IndicatorModel.getDashboardData(
+            desde, hasta,
+            idDepartamento && idDepartamento !== 'TODOS' ? idDepartamento : null
+        );
+        res.json(datos);
+    } catch (err) {
+        console.error('Error al obtener datos de gráficas:', err);
+        res.status(500).json({ error: 'Error interno al consultar los datos de las gráficas.' });
+    }
+};
+
+// DELETE /api/indicators/records/:idCarga
+const deleteIndicatorLoad = async (req, res) => {
+    try {
+        const { idCarga } = req.params;
+        if (!idCarga || isNaN(idCarga)) {
+            return res.status(400).json({ error: 'ID de carga inválido.' });
+        }
+        const filas = await IndicatorModel.deleteLoad(idCarga);
+        if (filas === 0) return res.status(404).json({ error: 'La carga no existe.' });
+        res.json({ mensaje: 'Carga eliminada.' });
+    } catch (err) {
+        console.error('Error al eliminar la carga del indicador:', err);
+        res.status(500).json({ error: 'Error interno al eliminar la carga.' });
+    }
+};
+
 module.exports = {
+    deleteIndicatorLoad,
+    updateIndicatorMeta,
+    getDashboardData,
     getIndicatorsByDepartment,
     createIndicatorConfig,
     saveIndicatorLoad,

@@ -30,7 +30,10 @@ const {
     getIndicatorsByDepartment, 
     createIndicatorConfig, 
     saveIndicatorLoad, 
-    getIndicatorRecords 
+    getIndicatorRecords,
+    updateIndicatorMeta,
+    getDashboardData,
+    deleteIndicatorLoad
 } = require('./indicators.controller');
 
 // Obtener indicadores configurados por departamento
@@ -44,5 +47,14 @@ router.post('/load', saveIndicatorLoad);
 
 // Consultar historial de registros por depto, año y mes opcional
 router.get('/records', getIndicatorRecords);
+
+// Meta (%) de un indicador
+router.put('/config/:id/meta', updateIndicatorMeta);
+
+// Datos para las gráficas
+router.get('/dashboard', getDashboardData);
+
+// Eliminar una carga mensual
+router.delete('/records/:idCarga', deleteIndicatorLoad);
 
 module.exports = router;

@@ -15,6 +15,8 @@ const documentRoutes = require('./modules/documents/documents.routes');
 const indicatorRoutes = require('./modules/indicators/indicators.routes');
 const departmentRoutes = require('./modules/departaments/departments.routes');
 const userRoutes = require('./modules/users/users.routes');
+const notificationRoutes = require('./modules/notifications/notifications.routes');
+const { iniciarTareasProgramadas } = require('./services/scheduler');
 
 // Carpeta donde se guardan los PDF (fuera de src/)
 const localUploadsPath = path.join(__dirname, '../uploads');
@@ -25,6 +27,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/indicators', indicatorRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Para que el frontend verifique si el backend está activo
 app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -40,4 +43,5 @@ app.listen(PORT, (err) => {
         process.exit(1);
     }
     console.log(`Backend SGDPola corriendo en puerto ${PORT}`);
+    iniciarTareasProgramadas();
 });
